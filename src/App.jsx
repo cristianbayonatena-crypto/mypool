@@ -52,10 +52,14 @@ export default function App() {
   const [logs, setLogs] = useState([]);
   const [view, setView] = useState("dashboard");
   const [selPool, setSelPool] = useState(null);
+  const [selLog, setSelLog] = useState(null);
   const [np, setNp] = useState({ name: "", location: "", volume: "", type: "Residencial", photo: null });
   const [nl, setNl] = useState({ tasks: [], chemicals: {}, quantities: {}, notes: "", date: new Date().toISOString().slice(0, 10) });
   const [filterPool, setFilterPool] = useState("all");
+  const [aiAnalysis, setAiAnalysis] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
   const photoRef = useRef();
+
   const now = new Date();
   const thisMonth = logs.filter(l => { const d = new Date(l.createdAt); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); }).length;
 
@@ -87,6 +91,29 @@ export default function App() {
 
   function lastLog(pid) { return logs.find(l => l.poolId === pid); }
 
+  async function analyzeWithAI(log, pool) {
+    setAiAnalysis("");
+    setAiLoading(true);
+    setSelLog(log);
+    setSelPool(pool);
+    setView("analysis");
+    try {
+      const res = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          measurements: log.chemicals || {},
+          poolVolume: pool?.volume || "",
+        }),
+      });
+      const data = await res.json();
+      setAiAnalysis(data.analysis || "No se pudo generar el análisis.");
+    } catch {
+      setAiAnalysis("Error al conectar con la IA. Inténtalo de nuevo.");
+    }
+    setAiLoading(false);
+  }
+
   const bg = { position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "linear-gradient(160deg,#0077b6 0%,#00b4d8 50%,#90e0ef 100%)", zIndex: 0 };
   const wrap = { position: "relative", zIndex: 1, minHeight: "100vh", fontFamily: "Inter, Arial, sans-serif" };
   const glass = { background: "rgba(255,255,255,0.18)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.35)" };
@@ -99,11 +126,11 @@ export default function App() {
   const badge = (s) => ({ display: "inline-block", background: statusColors[s] + "33", color: statusColors[s], border: `1px solid ${statusColors[s]}66`, borderRadius: 20, padding: "2px 9px", fontSize: 10, fontWeight: 600, marginRight: 4, marginBottom: 3 });
   const chip = (s) => ({ display: "inline-block", background: s ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.1)", border: `1px solid ${s ? "rgba(255,255,255,0.8)" : "rgba(255,255,255,0.25)"}`, color: s ? "#fff" : "rgba(255,255,255,0.6)", borderRadius: 20, padding: "5px 13px", fontSize: 12, cursor: "pointer", margin: 3, fontWeight: s ? 600 : 400 });
   const navBtn = (a) => ({ background: a ? "rgba(255,255,255,0.25)" : "transparent", border: a ? "1px solid rgba(255,255,255,0.7)" : "1px solid rgba(255,255,255,0.25)", color: "#fff", borderRadius: 8, padding: "6px 14px", cursor: "pointer", fontFamily: "Inter, Arial, sans-serif", fontSize: 12, fontWeight: a ? 600 : 400, marginLeft: 6 });
-
   const btnRow = { display: "flex", gap: 10, marginTop: 24, paddingTop: 20, borderTop: "1px solid rgba(255,255,255,0.15)" };
   const btnSave = { background: "#003f88", color: "#fff", border: "2px solid rgba(255,255,255,0.5)", borderRadius: 12, padding: "13px 0", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "Inter, Arial, sans-serif", flex: 1, boxShadow: "0 4px 15px rgba(0,0,0,0.3)" };
   const btnCancel = { background: "rgba(255,255,255,0.1)", color: "#fff", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 12, padding: "13px 0", fontSize: 15, cursor: "pointer", fontFamily: "Inter, Arial, sans-serif", flex: 1 };
   const btnAdd = { background: "#003f88", color: "#fff", border: "2px solid rgba(255,255,255,0.5)", borderRadius: 10, padding: "10px 22px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "Inter, Arial, sans-serif", boxShadow: "0 4px 15px rgba(0,0,0,0.35)" };
+  const btnAI = { background: "linear-gradient(135deg,#7b2ff7,#00b4d8)", color: "#fff", border: "none", borderRadius: 10, padding: "8px 16px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "Inter, Arial, sans-serif", display: "flex", alignItems: "center", gap: 6, boxShadow: "0 4px 15px rgba(123,47,247,0.4)" };
 
   // DASHBOARD
   if (view === "dashboard") return (
@@ -178,10 +205,7 @@ export default function App() {
         <div style={{ ...glassDark, borderRadius: 16, padding: 24 }}>
           <label style={lbl}>Foto de la piscina</label>
           <div onClick={() => photoRef.current.click()} style={{ width: "100%", height: 130, background: "rgba(255,255,255,0.08)", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", border: "2px dashed rgba(255,255,255,0.3)", overflow: "hidden" }}>
-            {np.photo
-              ? <img src={np.photo} alt="preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-              : <div style={{ textAlign: "center", color: "rgba(255,255,255,0.5)" }}><div style={{ fontSize: 28 }}>📷</div><div style={{ fontSize: 12, marginTop: 6 }}>Pulsa para añadir foto</div></div>
-            }
+            {np.photo ? <img src={np.photo} alt="preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <div style={{ textAlign: "center", color: "rgba(255,255,255,0.5)" }}><div style={{ fontSize: 28 }}>📷</div><div style={{ fontSize: 12, marginTop: 6 }}>Pulsa para añadir foto</div></div>}
           </div>
           <input ref={photoRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handlePhoto} />
           <label style={lbl}>Nombre</label>
@@ -189,16 +213,8 @@ export default function App() {
           <label style={lbl}>Ubicación</label>
           <input style={inp} value={np.location} onChange={e => setNp(p => ({ ...p, location: e.target.value }))} placeholder="Dirección o referencia" />
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <div>
-              <label style={lbl}>Volumen (m³)</label>
-              <input style={inp} type="number" value={np.volume} onChange={e => setNp(p => ({ ...p, volume: e.target.value }))} placeholder="Ej: 50" />
-            </div>
-            <div>
-              <label style={lbl}>Tipo</label>
-              <select style={sel} value={np.type} onChange={e => setNp(p => ({ ...p, type: e.target.value }))}>
-                <option>Residencial</option><option>Comercial</option><option>Deportiva</option><option>Hotel</option><option>Club</option>
-              </select>
-            </div>
+            <div><label style={lbl}>Volumen (m³)</label><input style={inp} type="number" value={np.volume} onChange={e => setNp(p => ({ ...p, volume: e.target.value }))} placeholder="Ej: 50" /></div>
+            <div><label style={lbl}>Tipo</label><select style={sel} value={np.type} onChange={e => setNp(p => ({ ...p, type: e.target.value }))}><option>Residencial</option><option>Comercial</option><option>Deportiva</option><option>Hotel</option><option>Club</option></select></div>
           </div>
           <div style={btnRow}>
             <button style={btnSave} onClick={savePool}>✓ Guardar Piscina</button>
@@ -258,6 +274,62 @@ export default function App() {
     </div>
   );
 
+  // ANALYSIS IA
+  if (view === "analysis") return (
+    <div style={wrap}>
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+      <div style={bg} />
+      <div style={hdr}>
+        <div style={{ fontSize: 18, fontWeight: 700, color: "#fff" }}>🏊 AquaLog Pro</div>
+        <button style={navBtn(false)} onClick={() => setView("history")}>← Volver</button>
+      </div>
+      <div style={main}>
+        <div style={{ color: "#fff", fontSize: 22, fontWeight: 700, marginBottom: 4 }}>🤖 Análisis IA</div>
+        <div style={{ fontSize: 13, color: "rgba(255,255,255,0.65)", marginBottom: 22 }}>{selPool?.name} · {selLog && fmtDate(selLog.createdAt)}</div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(130px,1fr))", gap: 8, marginBottom: 20 }}>
+          {chems.map(c => {
+            const v = selLog?.chemicals?.[c.id];
+            if (!v) return null;
+            const s = getStatus(c.id, v);
+            return (
+              <div key={c.id} style={{ ...glass, borderRadius: 12, padding: 12, textAlign: "center" }}>
+                <div style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", marginBottom: 4, fontWeight: 600 }}>{c.label}</div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: statusColors[s] }}>{v}{c.unit ? " " + c.unit : ""}</div>
+                <span style={badge(s)}>{s}</span>
+              </div>
+            );
+          })}
+        </div>
+
+        <div style={{ ...glassDark, borderRadius: 16, padding: 24 }}>
+          {aiLoading ? (
+            <div style={{ textAlign: "center", padding: "40px 20px" }}>
+              <div style={{ fontSize: 40, marginBottom: 16 }}>🤖</div>
+              <div style={{ color: "#fff", fontSize: 16, fontWeight: 600, marginBottom: 8 }}>Analizando mediciones...</div>
+              <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 13 }}>La IA está preparando tu informe personalizado</div>
+              <div style={{ marginTop: 20, display: "flex", justifyContent: "center", gap: 6 }}>
+                {[0, 1, 2].map(i => (
+                  <div key={i} style={{ width: 8, height: 8, borderRadius: "50%", background: "#00b4d8", opacity: 0.7, animation: `pulse 1.2s ease-in-out ${i * 0.4}s infinite` }} />
+                ))}
+              </div>
+              <style>{`@keyframes pulse { 0%,100%{transform:scale(1);opacity:0.4} 50%{transform:scale(1.4);opacity:1} }`}</style>
+            </div>
+          ) : (
+            <div>
+              <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 11, letterSpacing: 2, textTransform: "uppercase", fontWeight: 600, marginBottom: 16 }}>Informe del experto</div>
+              <div style={{ color: "#fff", fontSize: 14, lineHeight: 1.8, whiteSpace: "pre-wrap" }}>{aiAnalysis}</div>
+              <div style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid rgba(255,255,255,0.15)", display: "flex", gap: 10 }}>
+                <button style={{ ...btnSave, flex: 1 }} onClick={() => { setSelLog(null); setAiAnalysis(""); setView("history"); }}>✓ Entendido</button>
+                <button style={{ ...btnCancel, flex: "none", padding: "13px 20px" }} onClick={() => analyzeWithAI(selLog, selPool)}>🔄 Regenerar</button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
   // HISTORY
   const filtered = filterPool === "all" ? logs : logs.filter(l => l.poolId === filterPool);
   return (
@@ -280,9 +352,7 @@ export default function App() {
               {pools.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
             {filterPool !== "all" && (
-              <button style={{ ...btnAdd, padding: "8px 16px", fontSize: 12 }} onClick={() => exportPDF(pools.find(p => p.id === filterPool), logs)}>
-                📄 Exportar PDF
-              </button>
+              <button style={{ ...btnAdd, padding: "8px 16px", fontSize: 12 }} onClick={() => exportPDF(pools.find(p => p.id === filterPool), logs)}>📄 PDF</button>
             )}
           </div>
         </div>
@@ -290,20 +360,30 @@ export default function App() {
           ? <div style={{ ...glass, borderRadius: 16, padding: 50, textAlign: "center", color: "rgba(255,255,255,0.7)" }}>
               <div style={{ fontSize: 40, marginBottom: 10 }}>📋</div>No hay registros aún
             </div>
-          : filtered.map(l => (
-            <div key={l.id} style={{ ...glass, borderRadius: 14, padding: 18, marginBottom: 12 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
-                <div>
-                  <div style={{ color: "#fff", fontWeight: 700, fontSize: 15 }}>{l.poolName}</div>
-                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", marginTop: 2 }}>{fmtDate(l.createdAt)}</div>
+          : filtered.map(l => {
+              const pool = pools.find(p => p.id === l.poolId);
+              const hasChemicals = Object.keys(l.chemicals || {}).length > 0;
+              return (
+                <div key={l.id} style={{ ...glass, borderRadius: 14, padding: 18, marginBottom: 12 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
+                    <div>
+                      <div style={{ color: "#fff", fontWeight: 700, fontSize: 15 }}>{l.poolName}</div>
+                      <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", marginTop: 2 }}>{fmtDate(l.createdAt)}</div>
+                    </div>
+                    <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+                      {hasChemicals && (
+                        <button style={btnAI} onClick={() => analyzeWithAI(l, pool)}>
+                          🤖 Analizar con IA
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  {l.tasks?.length > 0 && <div style={{ marginBottom: 8 }}>{l.tasks.map(t => <span key={t} style={{ display: "inline-block", background: "rgba(255,255,255,0.15)", color: "#fff", borderRadius: 20, padding: "3px 10px", fontSize: 11, margin: 2 }}>{t}</span>)}</div>}
+                  {hasChemicals && <div style={{ marginBottom: 8 }}>{chems.map(c => { const v = l.chemicals?.[c.id]; const q = l.quantities?.[c.id]; if (!v) return null; const s = getStatus(c.id, v); return <span key={c.id} style={badge(s)}>{c.label}: {v}{c.unit ? " " + c.unit : ""}{q ? ` · ${q} kg/L` : ""}</span>; })}</div>}
+                  {l.notes && <div style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", background: "rgba(255,255,255,0.1)", borderRadius: 8, padding: "8px 12px", borderLeft: "3px solid rgba(255,255,255,0.4)" }}>{l.notes}</div>}
                 </div>
-                <div>{chems.slice(0, 2).map(c => { const v = l.chemicals?.[c.id]; if (!v) return null; const s = getStatus(c.id, v); return <span key={c.id} style={badge(s)}>{c.label}: {v}</span>; })}</div>
-              </div>
-              {l.tasks?.length > 0 && <div style={{ marginBottom: 8 }}>{l.tasks.map(t => <span key={t} style={{ display: "inline-block", background: "rgba(255,255,255,0.15)", color: "#fff", borderRadius: 20, padding: "3px 10px", fontSize: 11, margin: 2 }}>{t}</span>)}</div>}
-              {Object.keys(l.chemicals || {}).length > 0 && <div style={{ marginBottom: 8 }}>{chems.map(c => { const v = l.chemicals?.[c.id]; const q = l.quantities?.[c.id]; if (!v) return null; const s = getStatus(c.id, v); return <span key={c.id} style={badge(s)}>{c.label}: {v}{c.unit ? " " + c.unit : ""}{q ? ` · ${q} kg/L` : ""}</span>; })}</div>}
-              {l.notes && <div style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", background: "rgba(255,255,255,0.1)", borderRadius: 8, padding: "8px 12px", borderLeft: "3px solid rgba(255,255,255,0.4)" }}>{l.notes}</div>}
-            </div>
-          ))
+              );
+            })
         }
       </div>
     </div>

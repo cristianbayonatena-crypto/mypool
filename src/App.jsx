@@ -191,7 +191,7 @@ export default function App() {
     statL: { fontSize: 10, color: "rgba(255,255,255,0.7)", letterSpacing: 2, marginTop: 2, textTransform: "uppercase" },
     secHead: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 },
     secLbl: { fontSize: 11, color: "rgba(255,255,255,0.8)", letterSpacing: 2, textTransform: "uppercase", fontWeight: 600 },
-    addBtn: { background: "rgba(255,255,255,0.9)", color: "#0077b6", border: "none", borderRadius: 10, padding: "9px 18px", fontSize: 12, cursor: "pointer", fontFamily: "Inter, sans-serif", fontWeight: 700, letterSpacing: 0.5 },
+    addBtn: { background: "#0077b6", color: "#fff", border: "2px solid #fff", borderRadius: 10, padding: "10px 20px", fontSize: 13, cursor: "pointer", fontFamily: "Inter, sans-serif", fontWeight: 700, letterSpacing: 0.5, boxShadow: "0 4px 15px rgba(0,0,0,0.3)" },
     grid: { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))", gap: 14 },
     card: { borderRadius: 16, padding: 18, cursor: "pointer", transition: "all .2s", overflow: "hidden" },
     badge: (s) => ({ display: "inline-block", background: statusColors[s] + "33", color: statusColors[s], border: `1px solid ${statusColors[s]}66`, borderRadius: 20, padding: "2px 9px", fontSize: 10, fontWeight: 600, marginRight: 4, marginBottom: 3 }),

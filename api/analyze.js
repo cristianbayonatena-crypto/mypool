@@ -16,30 +16,28 @@ Mediciones:
 - Dureza: ${measurements.hard || "no medido"} ppm (ideal: 200-400)
 - Ácido cianúrico: ${measurements.cya || "no medido"} ppm (ideal: 30-50)
 
-Da un análisis completo con: diagnóstico, problemas detectados, tratamiento con productos y cantidades, consejos y cuándo hacer la próxima revisión.`;
+Da un análisis completo con: diagnóstico, problemas detectados, tratamiento con productos y cantidades exactas, consejos y cuándo hacer la próxima revisión.`;
 
   try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": process.env.ANTHROPIC_KEY,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 1024,
-        messages: [{ role: "user", content: prompt }],
-      }),
-    });
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+        }),
+      }
+    );
 
     if (!response.ok) {
       const err = await response.text();
-      return res.status(500).json({ error: "Error Anthropic: " + err });
+      return res.status(500).json({ error: "Error Gemini: " + err });
     }
 
     const data = await response.json();
-    res.status(200).json({ analysis: data.content[0].text });
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    res.status(200).json({ analysis: text || "No se pudo generar el análisis." });
   } catch (error) {
     res.status(500).json({ error: "Error: " + error.message });
   }

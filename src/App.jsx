@@ -230,7 +230,7 @@ function fmtDate(iso) {
   win.document.close();
   setTimeout(() => win.print(), 800);
 }
-}
+
 
 export default function App() {
   const [user, setUser] = useState(null);

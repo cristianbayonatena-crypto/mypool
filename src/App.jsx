@@ -368,7 +368,7 @@ export default function App() {
           ))}
         </div>
 
-        <div style={display: "flex", : justifyContent: "space-between", alignItems: "center", marginBottom: 14, background: "rgba(0,20,60,0.3)", borderRadius: 12, padding: "12px 16px" }>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, background: "rgba(0,20,60,0.3)", borderRadius: 12, padding: "12px 16px" }>
           <span style={{ fontSize: 11, color: "rgba(255,255,255,0.85)", letterSpacing: 2, textTransform: "uppercase", fontWeight: 600 }}>Mis Piscinas</span>
           <button style={btnAdd} onClick={() => setView("addPool")}>+ Nueva Piscina</button>
         </div>

@@ -1,3 +1,5 @@
+import Anthropic from "@anthropic-ai/sdk";
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -18,32 +20,20 @@ Mediciones actuales:
 
 Proporciona:
 1. DIAGNÓSTICO: Estado general de la piscina
-2. PROBLEMAS DETECTADOS: Lista cada parámetro fuera de rango con explicación clara
-3. TRATAMIENTO: Para cada problema, indica exactamente qué producto usar, qué cantidad aproximada añadir por m³ y en qué orden
-4. CONSEJOS: Recomendaciones adicionales para mantener el agua en buen estado
-5. PRÓXIMA REVISIÓN: Cuándo volver a medir
-
-Sé específico, práctico y usa un tono profesional pero comprensible.`;
+2. PROBLEMAS DETECTADOS: Lista cada parámetro fuera de rango con explicación
+3. TRATAMIENTO: Para cada problema, qué producto usar, qué cantidad por m³ y en qué orden
+4. CONSEJOS: Recomendaciones adicionales
+5. PRÓXIMA REVISIÓN: Cuándo volver a medir`;
 
   try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": process.env.ANTHROPIC_KEY,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 1024,
-        messages: [{ role: "user", content: prompt }],
-      }),
+    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_KEY });
+    const message = await client.messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 1024,
+      messages: [{ role: "user", content: prompt }],
     });
-
-    const data = await response.json();
-    const text = data.content?.[0]?.text || "No se pudo generar el análisis.";
-    res.status(200).json({ analysis: text });
+    res.status(200).json({ analysis: message.content[0].text });
   } catch (error) {
-    res.status(500).json({ error: "Error al contactar con la IA" });
+    res.status(500).json({ error: "Error: " + error.message });
   }
 }

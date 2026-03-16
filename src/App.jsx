@@ -15,9 +15,7 @@ const taskOptions = [
   "Revisión de iluminación", "Cambio de agua parcial",
 ];
 
-const statusColors = {
-  Óptimo: "#00e5a0", Bajo: "#ffcc00", Alto: "#ff6b35", "No medido": "#666"
-};
+const statusColors = { Óptimo: "#00e5a0", Bajo: "#ffcc00", Alto: "#ff6b35", "No medido": "#666" };
 
 function getStatus(id, val) {
   const v = parseFloat(val);
@@ -37,34 +35,14 @@ function fmtDate(iso) {
 function exportPDF(pool, logs) {
   const poolLogs = logs.filter(l => l.poolId === pool.id);
   const win = window.open("", "_blank");
-  win.document.write(`
-    <html><head><title>Informe ${pool.name}</title>
-    <style>
-      body { font-family: Arial, sans-serif; padding: 40px; color: #1a1a2e; }
-      h1 { color: #0077b6; border-bottom: 2px solid #0077b6; padding-bottom: 10px; }
-      .meta { color: #666; font-size: 13px; margin-bottom: 30px; }
-      .entry { border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
-      .date { font-weight: 700; color: #0077b6; margin-bottom: 8px; }
-      .task { display: inline-block; background: #e8f4fd; color: #0077b6; padding: 2px 10px; border-radius: 20px; font-size: 11px; margin: 2px; }
-      .notes { background: #f8f9fa; border-left: 3px solid #0077b6; padding: 8px 12px; font-size: 13px; margin-top: 8px; }
-      table { width: 100%; border-collapse: collapse; margin-top: 8px; }
-      td, th { padding: 6px 10px; border: 1px solid #eee; font-size: 12px; text-align: left; }
-      th { background: #e8f4fd; color: #0077b6; }
-    </style></head><body>
-    <h1>🏊 Informe — ${pool.name}</h1>
-    <div class="meta">${pool.location ? "📍 " + pool.location : ""} ${pool.volume ? "· Vol: " + pool.volume + " m³" : ""} · Generado: ${new Date().toLocaleDateString("es-ES")}</div>
-    <p><strong>Total registros:</strong> ${poolLogs.length}</p>
-    ${poolLogs.map(l => `
-      <div class="entry">
-        <div class="date">📅 ${fmtDate(l.createdAt)}</div>
-        ${l.tasks?.length ? `<div>${l.tasks.map(t => `<span class="task">${t}</span>`).join("")}</div>` : ""}
-        ${Object.keys(l.chemicals || {}).length ? `
-          <table><tr><th>Parámetro</th><th>Valor</th><th>Producto</th><th>Cantidad</th></tr>
-          ${chems.map(c => { const v = l.chemicals?.[c.id]; const q = l.quantities?.[c.id]; if (!v) return ""; return `<tr><td>${c.label}</td><td>${v} ${c.unit}</td><td>${c.prod}</td><td>${q ? q + " kg/L" : "—"}</td></tr>`; }).join("")}
-          </table>` : ""}
-        ${l.notes ? `<div class="notes">📝 ${l.notes}</div>` : ""}
-      </div>`).join("")}
-    </body></html>`);
+  win.document.write(`<html><head><title>Informe ${pool.name}</title>
+  <style>body{font-family:Arial,sans-serif;padding:40px;color:#1a1a2e}h1{color:#0077b6;border-bottom:2px solid #0077b6;padding-bottom:10px}.meta{color:#666;font-size:13px;margin-bottom:30px}.entry{border:1px solid #ddd;border-radius:8px;padding:16px;margin-bottom:16px}.date{font-weight:700;color:#0077b6;margin-bottom:8px}.task{display:inline-block;background:#e8f4fd;color:#0077b6;padding:2px 10px;border-radius:20px;font-size:11px;margin:2px}.notes{background:#f8f9fa;border-left:3px solid #0077b6;padding:8px 12px;font-size:13px;margin-top:8px}table{width:100%;border-collapse:collapse;margin-top:8px}td,th{padding:6px 10px;border:1px solid #eee;font-size:12px;text-align:left}th{background:#e8f4fd;color:#0077b6}</style>
+  </head><body>
+  <h1>🏊 Informe — ${pool.name}</h1>
+  <div class="meta">${pool.location ? "📍 " + pool.location : ""} ${pool.volume ? "· Vol: " + pool.volume + " m³" : ""} · Generado: ${new Date().toLocaleDateString("es-ES")}</div>
+  <p><strong>Total registros:</strong> ${poolLogs.length}</p>
+  ${poolLogs.map(l => `<div class="entry"><div class="date">📅 ${fmtDate(l.createdAt)}</div>${l.tasks?.length ? `<div>${l.tasks.map(t => `<span class="task">${t}</span>`).join("")}</div>` : ""}${Object.keys(l.chemicals || {}).length ? `<table><tr><th>Parámetro</th><th>Valor</th><th>Producto</th><th>Cantidad</th></tr>${chems.map(c => { const v = l.chemicals?.[c.id]; const q = l.quantities?.[c.id]; if (!v) return ""; return `<tr><td>${c.label}</td><td>${v} ${c.unit}</td><td>${c.prod}</td><td>${q ? q + " kg/L" : "—"}</td></tr>`; }).join("")}</table>` : ""}${l.notes ? `<div class="notes">📝 ${l.notes}</div>` : ""}</div>`).join("")}
+  </body></html>`);
   win.document.close();
   setTimeout(() => win.print(), 500);
 }
@@ -109,152 +87,28 @@ export default function App() {
 
   function lastLog(pid) { return logs.find(l => l.poolId === pid); }
 
-  const bg = {
-    position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
-    background: "linear-gradient(160deg, #0077b6 0%, #00b4d8 50%, #90e0ef 100%)",
-    zIndex: 0
-  };
-
+  const bg = { position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "linear-gradient(160deg,#0077b6 0%,#00b4d8 50%,#90e0ef 100%)", zIndex: 0 };
   const wrap = { position: "relative", zIndex: 1, minHeight: "100vh", fontFamily: "Inter, Arial, sans-serif" };
-
-  const glass = {
-    background: "rgba(255,255,255,0.18)",
-    backdropFilter: "blur(16px)",
-    WebkitBackdropFilter: "blur(16px)",
-    border: "1px solid rgba(255,255,255,0.35)",
-  };
-
-  const glassDark = {
-    background: "rgba(0,20,50,0.45)",
-    backdropFilter: "blur(16px)",
-    WebkitBackdropFilter: "blur(16px)",
-    border: "1px solid rgba(255,255,255,0.2)",
-  };
-
+  const glass = { background: "rgba(255,255,255,0.18)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.35)" };
+  const glassDark = { background: "rgba(0,20,50,0.45)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.2)" };
   const hdr = { ...glass, padding: "14px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" };
   const main = { maxWidth: 820, margin: "0 auto", padding: "24px 16px" };
+  const inp = { background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.35)", borderRadius: 10, padding: "10px 14px", color: "#fff", fontSize: 14, fontFamily: "Inter, Arial, sans-serif", width: "100%", outline: "none", boxSizing: "border-box" };
+  const sel = { background: "rgba(0,20,50,0.7)", border: "1px solid rgba(255,255,255,0.35)", borderRadius: 10, padding: "10px 14px", color: "#fff", fontSize: 14, fontFamily: "Inter, Arial, sans-serif", width: "100%", outline: "none", boxSizing: "border-box" };
+  const lbl = { fontSize: 11, color: "rgba(255,255,255,0.75)", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 6, display: "block", marginTop: 18, fontWeight: 600 };
+  const badge = (s) => ({ display: "inline-block", background: statusColors[s] + "33", color: statusColors[s], border: `1px solid ${statusColors[s]}66`, borderRadius: 20, padding: "2px 9px", fontSize: 10, fontWeight: 600, marginRight: 4, marginBottom: 3 });
+  const chip = (s) => ({ display: "inline-block", background: s ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.1)", border: `1px solid ${s ? "rgba(255,255,255,0.8)" : "rgba(255,255,255,0.25)"}`, color: s ? "#fff" : "rgba(255,255,255,0.6)", borderRadius: 20, padding: "5px 13px", fontSize: 12, cursor: "pointer", margin: 3, fontWeight: s ? 600 : 400 });
+  const navBtn = (a) => ({ background: a ? "rgba(255,255,255,0.25)" : "transparent", border: a ? "1px solid rgba(255,255,255,0.7)" : "1px solid rgba(255,255,255,0.25)", color: "#fff", borderRadius: 8, padding: "6px 14px", cursor: "pointer", fontFamily: "Inter, Arial, sans-serif", fontSize: 12, fontWeight: a ? 600 : 400, marginLeft: 6 });
 
-  const btnPrimary = {
-    background: "#003f88",
-    color: "#fff",
-    border: "2px solid rgba(255,255,255,0.5)",
-    borderRadius: 10,
-    padding: "10px 22px",
-    fontSize: 14,
-    fontWeight: 700,
-    cursor: "pointer",
-    fontFamily: "Inter, Arial, sans-serif",
-    boxShadow: "0 4px 15px rgba(0,0,0,0.35)",
-    letterSpacing: 0.3,
-  };
-
-  const btnSave = {
-    background: "#003f88",
-    color: "#fff",
-    border: "2px solid rgba(255,255,255,0.4)",
-    borderRadius: 12,
-    padding: "12px 30px",
-    fontSize: 14,
-    fontWeight: 700,
-    cursor: "pointer",
-    fontFamily: "Inter, Arial, sans-serif",
-    marginTop: 22,
-    boxShadow: "0 4px 15px rgba(0,0,0,0.3)",
-  };
-
-  const btnCancel = {
-    background: "transparent",
-    color: "#fff",
-    border: "1px solid rgba(255,255,255,0.4)",
-    borderRadius: 12,
-    padding: "12px 22px",
-    fontSize: 14,
-    cursor: "pointer",
-    fontFamily: "Inter, Arial, sans-serif",
-    marginTop: 22,
-    marginLeft: 10,
-  };
-
-  const inp = {
-    background: "rgba(255,255,255,0.15)",
-    border: "1px solid rgba(255,255,255,0.35)",
-    borderRadius: 10,
-    padding: "10px 14px",
-    color: "#fff",
-    fontSize: 14,
-    fontFamily: "Inter, Arial, sans-serif",
-    width: "100%",
-    outline: "none",
-    boxSizing: "border-box",
-  };
-
-  const sel = {
-    background: "rgba(0,20,50,0.7)",
-    border: "1px solid rgba(255,255,255,0.35)",
-    borderRadius: 10,
-    padding: "10px 14px",
-    color: "#fff",
-    fontSize: 14,
-    fontFamily: "Inter, Arial, sans-serif",
-    width: "100%",
-    outline: "none",
-    boxSizing: "border-box",
-  };
-
-  const lbl = {
-    fontSize: 11,
-    color: "rgba(255,255,255,0.75)",
-    letterSpacing: 1.5,
-    textTransform: "uppercase",
-    marginBottom: 6,
-    display: "block",
-    marginTop: 18,
-    fontWeight: 600,
-  };
-
-  const badge = (s) => ({
-    display: "inline-block",
-    background: statusColors[s] + "33",
-    color: statusColors[s],
-    border: `1px solid ${statusColors[s]}66`,
-    borderRadius: 20,
-    padding: "2px 9px",
-    fontSize: 10,
-    fontWeight: 600,
-    marginRight: 4,
-    marginBottom: 3,
-  });
-
-  const chip = (s) => ({
-    display: "inline-block",
-    background: s ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.1)",
-    border: `1px solid ${s ? "rgba(255,255,255,0.8)" : "rgba(255,255,255,0.25)"}`,
-    color: s ? "#fff" : "rgba(255,255,255,0.6)",
-    borderRadius: 20,
-    padding: "5px 13px",
-    fontSize: 12,
-    cursor: "pointer",
-    margin: 3,
-    fontWeight: s ? 600 : 400,
-  });
-
-  const navBtn = (a) => ({
-    background: a ? "rgba(255,255,255,0.25)" : "transparent",
-    border: a ? "1px solid rgba(255,255,255,0.7)" : "1px solid rgba(255,255,255,0.25)",
-    color: "#fff",
-    borderRadius: 8,
-    padding: "6px 14px",
-    cursor: "pointer",
-    fontFamily: "Inter, Arial, sans-serif",
-    fontSize: 12,
-    fontWeight: a ? 600 : 400,
-    marginLeft: 6,
-  });
+  const btnRow = { display: "flex", gap: 10, marginTop: 24, paddingTop: 20, borderTop: "1px solid rgba(255,255,255,0.15)" };
+  const btnSave = { background: "#003f88", color: "#fff", border: "2px solid rgba(255,255,255,0.5)", borderRadius: 12, padding: "13px 0", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "Inter, Arial, sans-serif", flex: 1, boxShadow: "0 4px 15px rgba(0,0,0,0.3)" };
+  const btnCancel = { background: "rgba(255,255,255,0.1)", color: "#fff", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 12, padding: "13px 0", fontSize: 15, cursor: "pointer", fontFamily: "Inter, Arial, sans-serif", flex: 1 };
+  const btnAdd = { background: "#003f88", color: "#fff", border: "2px solid rgba(255,255,255,0.5)", borderRadius: 10, padding: "10px 22px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "Inter, Arial, sans-serif", boxShadow: "0 4px 15px rgba(0,0,0,0.35)" };
 
   // DASHBOARD
   if (view === "dashboard") return (
     <div style={wrap}>
-      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
       <div style={bg} />
       <div style={hdr}>
         <div style={{ fontSize: 18, fontWeight: 700, color: "#fff", letterSpacing: 1 }}>🏊 AquaLog Pro</div>
@@ -275,14 +129,14 @@ export default function App() {
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
           <span style={{ fontSize: 11, color: "rgba(255,255,255,0.85)", letterSpacing: 2, textTransform: "uppercase", fontWeight: 600 }}>Mis Piscinas</span>
-          <button style={btnPrimary} onClick={() => setView("addPool")}>+ Nueva Piscina</button>
+          <button style={btnAdd} onClick={() => setView("addPool")}>+ Nueva Piscina</button>
         </div>
         {pools.length === 0
           ? <div style={{ ...glass, borderRadius: 16, padding: 50, textAlign: "center" }}>
               <div style={{ fontSize: 48, marginBottom: 12 }}>🏊‍♂️</div>
-              <div style={{ color: "#fff", fontWeight: 600, fontSize: 16, marginBottom: 6 }}>Aún no tienes piscinas</div>
-              <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 13, marginBottom: 20 }}>Pulsa el botón de arriba para añadir la primera</div>
-              <button style={btnPrimary} onClick={() => setView("addPool")}>+ Nueva Piscina</button>
+              <div style={{ color: "#fff", fontWeight: 600, fontSize: 16, marginBottom: 8 }}>Aún no tienes piscinas</div>
+              <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 13, marginBottom: 22 }}>Pulsa el botón para añadir la primera</div>
+              <button style={btnAdd} onClick={() => setView("addPool")}>+ Nueva Piscina</button>
             </div>
           : <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))", gap: 14 }}>
               {pools.map(pool => {
@@ -312,7 +166,7 @@ export default function App() {
   // ADD POOL
   if (view === "addPool") return (
     <div style={wrap}>
-      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
       <div style={bg} />
       <div style={hdr}>
         <div style={{ fontSize: 18, fontWeight: 700, color: "#fff" }}>🏊 AquaLog Pro</div>
@@ -323,10 +177,10 @@ export default function App() {
         <div style={{ fontSize: 13, color: "rgba(255,255,255,0.65)", marginBottom: 22 }}>Añade los datos de la instalación</div>
         <div style={{ ...glassDark, borderRadius: 16, padding: 24 }}>
           <label style={lbl}>Foto de la piscina</label>
-          <div onClick={() => photoRef.current.click()} style={{ width: "100%", height: 140, background: "rgba(255,255,255,0.08)", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", border: "2px dashed rgba(255,255,255,0.3)", overflow: "hidden" }}>
+          <div onClick={() => photoRef.current.click()} style={{ width: "100%", height: 130, background: "rgba(255,255,255,0.08)", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", border: "2px dashed rgba(255,255,255,0.3)", overflow: "hidden" }}>
             {np.photo
               ? <img src={np.photo} alt="preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-              : <div style={{ textAlign: "center", color: "rgba(255,255,255,0.5)" }}><div style={{ fontSize: 32 }}>📷</div><div style={{ fontSize: 12, marginTop: 6 }}>Pulsa para añadir foto</div></div>
+              : <div style={{ textAlign: "center", color: "rgba(255,255,255,0.5)" }}><div style={{ fontSize: 28 }}>📷</div><div style={{ fontSize: 12, marginTop: 6 }}>Pulsa para añadir foto</div></div>
             }
           </div>
           <input ref={photoRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handlePhoto} />
@@ -346,9 +200,11 @@ export default function App() {
               </select>
             </div>
           </div>
+          <div style={btnRow}>
+            <button style={btnSave} onClick={savePool}>✓ Guardar Piscina</button>
+            <button style={btnCancel} onClick={() => setView("dashboard")}>Cancelar</button>
+          </div>
         </div>
-        <button style={btnSave} onClick={savePool}>Guardar Piscina</button>
-        <button style={btnCancel} onClick={() => setView("dashboard")}>Cancelar</button>
       </div>
     </div>
   );
@@ -356,7 +212,7 @@ export default function App() {
   // ADD LOG
   if (view === "addLog") return (
     <div style={wrap}>
-      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
       <div style={bg} />
       <div style={hdr}>
         <div style={{ fontSize: 18, fontWeight: 700, color: "#fff" }}>🏊 AquaLog Pro</div>
@@ -370,19 +226,19 @@ export default function App() {
           <input style={{ ...inp, maxWidth: 200 }} type="date" value={nl.date} onChange={e => setNl(l => ({ ...l, date: e.target.value }))} />
           <label style={lbl}>Tareas realizadas</label>
           <div style={{ marginBottom: 8 }}>{taskOptions.map(t => <span key={t} style={chip(nl.tasks.includes(t))} onClick={() => toggleTask(t)}>{t}</span>)}</div>
-          <label style={lbl}>Mediciones y productos añadidos</label>
+          <label style={lbl}>Mediciones y productos</label>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(150px,1fr))", gap: 10, marginTop: 6 }}>
             {chems.map(c => {
               const v = nl.chemicals[c.id] || "";
               const q = nl.quantities[c.id] || "";
               const s = v ? getStatus(c.id, v) : null;
               return (
-                <div key={c.id} style={{ background: "rgba(255,255,255,0.1)", border: `1px solid ${v ? statusColors[s] + "88" : "rgba(255,255,255,0.2)"}`, borderRadius: 12, padding: 14 }}>
-                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", marginBottom: 6, fontWeight: 600 }}>{c.label}{c.unit ? ` (${c.unit})` : ""}</div>
-                  <input style={{ background: "transparent", border: "none", color: v ? statusColors[s] : "#fff", fontSize: 20, fontFamily: "Inter, Arial, sans-serif", fontWeight: 700, width: "100%", outline: "none" }} type="number" step="0.1" value={v} placeholder="—" onChange={e => setNl(l => ({ ...l, chemicals: { ...l.chemicals, [c.id]: e.target.value } }))} />
-                  <div style={{ fontSize: 9, color: "rgba(255,255,255,0.4)", margin: "4px 0 6px" }}>Ideal: {c.ideal}</div>
-                  {s && <span style={{ ...badge(s), display: "inline-block", marginBottom: 8 }}>{s}</span>}
-                  <div style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", marginBottom: 4 }}>Cantidad añadida</div>
+                <div key={c.id} style={{ background: "rgba(255,255,255,0.1)", border: `1px solid ${v ? statusColors[s] + "88" : "rgba(255,255,255,0.2)"}`, borderRadius: 12, padding: 12 }}>
+                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", marginBottom: 5, fontWeight: 600 }}>{c.label}{c.unit ? ` (${c.unit})` : ""}</div>
+                  <input style={{ background: "transparent", border: "none", color: v ? statusColors[s] : "#fff", fontSize: 20, fontFamily: "Inter,Arial,sans-serif", fontWeight: 700, width: "100%", outline: "none" }} type="number" step="0.1" value={v} placeholder="—" onChange={e => setNl(l => ({ ...l, chemicals: { ...l.chemicals, [c.id]: e.target.value } }))} />
+                  <div style={{ fontSize: 9, color: "rgba(255,255,255,0.4)", margin: "3px 0 5px" }}>Ideal: {c.ideal}</div>
+                  {s && <span style={{ ...badge(s), display: "inline-block", marginBottom: 6 }}>{s}</span>}
+                  <div style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", marginBottom: 3 }}>Cantidad añadida</div>
                   <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                     <input style={{ ...inp, padding: "5px 8px", fontSize: 13, flex: 1 }} type="number" step="0.1" value={q} placeholder="0" onChange={e => setNl(l => ({ ...l, quantities: { ...l.quantities, [c.id]: e.target.value } }))} />
                     <span style={{ fontSize: 11, color: "rgba(255,255,255,0.5)" }}>kg/L</span>
@@ -393,9 +249,11 @@ export default function App() {
           </div>
           <label style={lbl}>Notas</label>
           <textarea style={{ ...inp, minHeight: 80, resize: "vertical" }} value={nl.notes} onChange={e => setNl(l => ({ ...l, notes: e.target.value }))} placeholder="Observaciones, incidencias..." />
+          <div style={btnRow}>
+            <button style={btnSave} onClick={saveLog}>✓ Guardar Registro</button>
+            <button style={btnCancel} onClick={() => setView("dashboard")}>Cancelar</button>
+          </div>
         </div>
-        <button style={btnSave} onClick={saveLog}>Guardar Registro</button>
-        <button style={btnCancel} onClick={() => setView("dashboard")}>Cancelar</button>
       </div>
     </div>
   );
@@ -404,7 +262,7 @@ export default function App() {
   const filtered = filterPool === "all" ? logs : logs.filter(l => l.poolId === filterPool);
   return (
     <div style={wrap}>
-      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
       <div style={bg} />
       <div style={hdr}>
         <div style={{ fontSize: 18, fontWeight: 700, color: "#fff" }}>🏊 AquaLog Pro</div>
@@ -422,7 +280,7 @@ export default function App() {
               {pools.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
             {filterPool !== "all" && (
-              <button style={{ ...btnPrimary, padding: "8px 16px", fontSize: 12 }} onClick={() => exportPDF(pools.find(p => p.id === filterPool), logs)}>
+              <button style={{ ...btnAdd, padding: "8px 16px", fontSize: 12 }} onClick={() => exportPDF(pools.find(p => p.id === filterPool), logs)}>
                 📄 Exportar PDF
               </button>
             )}

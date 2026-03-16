@@ -33,19 +33,203 @@ function fmtDate(iso) {
   return new Date(iso).toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" });
 }
 
-function exportPDF(pool, logs) {
-  const poolLogs = logs.filter(l => l.pool_id === pool.id);
+
+  function exportPDF(pool, logs, singleLog = null) {
+  const poolLogs = singleLog ? [singleLog] : logs.filter(l => l.pool_id === pool.id);
   const win = window.open("", "_blank");
-  win.document.write(`<html><head><title>Informe ${pool.name}</title>
-  <style>body{font-family:Arial,sans-serif;padding:40px;color:#1a1a2e}h1{color:#0077b6;border-bottom:2px solid #0077b6;padding-bottom:10px}.meta{color:#666;font-size:13px;margin-bottom:30px}.entry{border:1px solid #ddd;border-radius:8px;padding:16px;margin-bottom:16px}.date{font-weight:700;color:#0077b6;margin-bottom:8px}.task{display:inline-block;background:#e8f4fd;color:#0077b6;padding:2px 10px;border-radius:20px;font-size:11px;margin:2px}.notes{background:#f8f9fa;border-left:3px solid #0077b6;padding:8px 12px;font-size:13px;margin-top:8px}table{width:100%;border-collapse:collapse;margin-top:8px}td,th{padding:6px 10px;border:1px solid #eee;font-size:12px;text-align:left}th{background:#e8f4fd;color:#0077b6}</style>
-  </head><body>
-  <h1>🏊 Informe — ${pool.name}</h1>
-  <div class="meta">${pool.location ? "📍 " + pool.location : ""} ${pool.volume ? "· Vol: " + pool.volume + " m³" : ""} · Generado: ${new Date().toLocaleDateString("es-ES")}</div>
-  <p><strong>Total registros:</strong> ${poolLogs.length}</p>
-  ${poolLogs.map(l => `<div class="entry"><div class="date">📅 ${fmtDate(l.created_at)}</div>${l.tasks?.length ? `<div>${l.tasks.map(t => `<span class="task">${t}</span>`).join("")}</div>` : ""}${Object.keys(l.chemicals || {}).length ? `<table><tr><th>Parámetro</th><th>Valor</th><th>Producto</th><th>Cantidad</th></tr>${chems.map(c => { const v = l.chemicals?.[c.id]; const q = l.quantities?.[c.id]; if (!v) return ""; return `<tr><td>${c.label}</td><td>${v} ${c.unit}</td><td>${c.prod}</td><td>${q ? q + " kg/L" : "—"}</td></tr>`; }).join("")}</table>` : ""}${l.notes ? `<div class="notes">📝 ${l.notes}</div>` : ""}</div>`).join("")}
-  </body></html>`);
+  
+  const allDates = poolLogs.map(l => new Date(l.created_at).toLocaleDateString("es-ES", { day: "2-digit", month: "short" })).reverse();
+  const clData = poolLogs.map(l => parseFloat(l.chemicals?.cl) || null).reverse();
+  const phData = poolLogs.map(l => parseFloat(l.chemicals?.ph) || null).reverse();
+
+  const chartBars = (data, ideal_min, ideal_max, color) => {
+    const max = Math.max(...data.filter(Boolean), ideal_max * 1.5) || 10;
+    return data.map((v, i) => {
+      if (!v) return `<div style="flex:1;display:flex;align-items:flex-end;justify-content:center"><div style="width:20px;background:#eee;height:4px;border-radius:2px"></div></div>`;
+      const h = Math.round((v / max) * 80);
+      const ok = v >= ideal_min && v <= ideal_max;
+      return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+        <div style="font-size:9px;color:#555">${v}</div>
+        <div style="width:20px;height:${h}px;background:${ok ? color : "#ff6b35"};border-radius:3px 3px 0 0"></div>
+        <div style="font-size:8px;color:#888;writing-mode:vertical-lr;transform:rotate(180deg);max-height:40px;overflow:hidden">${allDates[i]}</div>
+      </div>`;
+    }).join("");
+  };
+
+  win.document.write(`<!DOCTYPE html>
+  <html><head><meta charset="UTF-8"><title>Informe — ${pool.name}</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'Inter',Arial,sans-serif; color:#1a2744; background:#fff; }
+    .page { max-width:800px; margin:0 auto; padding:40px; }
+    
+    .header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:32px; padding-bottom:24px; border-bottom:3px solid #0077b6; }
+    .header-left h1 { font-size:26px; font-weight:700; color:#0077b6; margin-bottom:4px; }
+    .header-left p { font-size:13px; color:#666; }
+    .header-right { text-align:right; }
+    .header-right .date { font-size:12px; color:#888; }
+    .header-right .badge { display:inline-block; background:#e8f4fd; color:#0077b6; padding:4px 12px; border-radius:20px; font-size:11px; font-weight:600; margin-top:4px; }
+    
+    .pool-info { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:28px; }
+    .pool-card { background:linear-gradient(135deg,#0077b6,#00b4d8); border-radius:14px; padding:20px; color:#fff; }
+    .pool-card h2 { font-size:18px; font-weight:700; margin-bottom:8px; }
+    .pool-card p { font-size:12px; opacity:0.85; margin-bottom:3px; }
+    .pool-img { border-radius:14px; overflow:hidden; background:#e8f4fd; display:flex; align-items:center; justify-content:center; min-height:120px; }
+    .pool-img img { width:100%; height:100%; object-fit:cover; }
+    .pool-img-placeholder { font-size:48px; }
+
+    .section { margin-bottom:28px; }
+    .section-title { font-size:13px; font-weight:700; color:#0077b6; text-transform:uppercase; letter-spacing:1.5px; margin-bottom:14px; padding-bottom:6px; border-bottom:1px solid #e8f4fd; }
+    
+    .stats-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin-bottom:24px; }
+    .stat-box { border-radius:10px; padding:12px; text-align:center; border:1px solid #e0e0e0; }
+    .stat-box .val { font-size:20px; font-weight:700; margin-bottom:2px; }
+    .stat-box .name { font-size:10px; color:#666; text-transform:uppercase; letter-spacing:0.5px; }
+    .stat-box .ideal { font-size:9px; color:#999; margin-top:2px; }
+    .stat-box.optimo { background:#f0fdf8; border-color:#00e5a044; }
+    .stat-box.optimo .val { color:#00a070; }
+    .stat-box.bajo { background:#fffbeb; border-color:#ffcc0044; }
+    .stat-box.bajo .val { color:#cc8800; }
+    .stat-box.alto { background:#fff5f0; border-color:#ff6b3544; }
+    .stat-box.alto .val { color:#cc4400; }
+    .stat-box.nomedido { background:#f9f9f9; border-color:#ddd; }
+    .stat-box.nomedido .val { color:#999; }
+
+    .chart { background:#f8faff; border-radius:12px; padding:16px; margin-bottom:16px; }
+    .chart-title { font-size:11px; font-weight:600; color:#0077b6; margin-bottom:12px; text-transform:uppercase; letter-spacing:1px; }
+    .chart-bars { display:flex; align-items:flex-end; gap:4px; height:120px; }
+    .chart-legend { display:flex; gap:16px; margin-top:8px; }
+    .chart-legend span { font-size:10px; color:#888; display:flex; align-items:center; gap:4px; }
+    .legend-dot { width:10px; height:10px; border-radius:50%; display:inline-block; }
+
+    .entry { border:1px solid #e8f0fe; border-radius:12px; padding:18px; margin-bottom:14px; }
+    .entry-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+    .entry-date { font-size:14px; font-weight:700; color:#0077b6; }
+    .entry-num { font-size:11px; color:#888; background:#f0f4ff; padding:3px 10px; border-radius:20px; }
+    
+    .tasks { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
+    .task-tag { background:#e8f4fd; color:#0077b6; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:500; }
+    
+    table { width:100%; border-collapse:collapse; font-size:12px; margin-bottom:10px; }
+    th { background:#0077b6; color:#fff; padding:8px 10px; text-align:left; font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; }
+    th:first-child { border-radius:6px 0 0 6px; }
+    th:last-child { border-radius:0 6px 6px 0; }
+    td { padding:8px 10px; border-bottom:1px solid #f0f0f0; }
+    tr:last-child td { border-bottom:none; }
+    tr:nth-child(even) td { background:#f8faff; }
+    .badge-optimo { background:#f0fdf8; color:#00a070; border:1px solid #00e5a044; padding:2px 8px; border-radius:20px; font-size:10px; font-weight:600; }
+    .badge-bajo { background:#fffbeb; color:#cc8800; border:1px solid #ffcc0044; padding:2px 8px; border-radius:20px; font-size:10px; font-weight:600; }
+    .badge-alto { background:#fff5f0; color:#cc4400; border:1px solid #ff6b3544; padding:2px 8px; border-radius:20px; font-size:10px; font-weight:600; }
+    
+    .notes-box { background:#f8faff; border-left:4px solid #0077b6; padding:10px 14px; border-radius:0 8px 8px 0; font-size:12px; color:#444; margin-top:10px; }
+    
+    .footer { margin-top:40px; padding-top:16px; border-top:1px solid #e0e0e0; display:flex; justify-content:space-between; align-items:center; }
+    .footer p { font-size:10px; color:#aaa; }
+    .footer .brand { font-size:12px; font-weight:700; color:#0077b6; }
+
+    @media print {
+      body { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+      .page { padding:20px; }
+    }
+  </style></head><body><div class="page">
+
+    <div class="header">
+      <div class="header-left">
+        <h1>🏊 AquaLog Pro</h1>
+        <p>Informe de mantenimiento profesional</p>
+      </div>
+      <div class="header-right">
+        <div class="date">Generado: ${new Date().toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" })}</div>
+        <div class="badge">${singleLog ? "Registro individual" : `${poolLogs.length} registros`}</div>
+      </div>
+    </div>
+
+    <div class="pool-info">
+      <div class="pool-card">
+        <h2>${pool.name}</h2>
+        ${pool.location ? `<p>📍 ${pool.location}</p>` : ""}
+        ${pool.volume ? `<p>💧 Volumen: ${pool.volume} m³</p>` : ""}
+        <p>🏷️ Tipo: ${pool.type || "Residencial"}</p>
+        ${!singleLog ? `<p style="margin-top:8px;font-size:11px;opacity:0.8">Total registros: ${poolLogs.length}</p>` : ""}
+      </div>
+      <div class="pool-img">
+        ${pool.photo ? `<img src="${pool.photo}" alt="${pool.name}">` : `<div class="pool-img-placeholder">🏊</div>`}
+      </div>
+    </div>
+
+    ${!singleLog && poolLogs.length > 1 ? `
+    <div class="section">
+      <div class="section-title">Evolución del agua</div>
+      <div class="chart">
+        <div class="chart-title">Cloro (ppm) — ideal 1–3</div>
+        <div class="chart-bars">${chartBars(clData, 1, 3, "#00b4d8")}</div>
+        <div class="chart-legend"><span><span class="legend-dot" style="background:#00b4d8"></span>En rango</span><span><span class="legend-dot" style="background:#ff6b35"></span>Fuera de rango</span></div>
+      </div>
+      <div class="chart">
+        <div class="chart-title">pH — ideal 7.2–7.6</div>
+        <div class="chart-bars">${chartBars(phData, 7.2, 7.6, "#0077b6")}</div>
+      </div>
+    </div>` : ""}
+
+    <div class="section">
+      <div class="section-title">${singleLog ? "Detalle del registro" : "Historial de registros"}</div>
+      ${poolLogs.map((l, idx) => {
+        const chemEntries = chems.filter(c => l.chemicals?.[c.id]);
+        const statusClass = (id, v) => {
+          const s = (() => {
+            const n = parseFloat(v);
+            if (isNaN(n)) return "nomedido";
+            if (id === "cl") return n < 1 ? "bajo" : n > 3 ? "alto" : "optimo";
+            if (id === "ph") return n < 7.2 ? "bajo" : n > 7.6 ? "alto" : "optimo";
+            if (id === "alk") return n < 80 ? "bajo" : n > 120 ? "alto" : "optimo";
+            if (id === "hard") return n < 200 ? "bajo" : n > 400 ? "alto" : "optimo";
+            if (id === "cya") return n < 30 ? "bajo" : n > 50 ? "alto" : "optimo";
+            return "optimo";
+          })();
+          return s;
+        };
+        const statusLabel = (id, v) => {
+          const s = statusClass(id, v);
+          return s === "optimo" ? "Óptimo" : s === "bajo" ? "Bajo" : s === "alto" ? "Alto" : "—";
+        };
+        return `
+        <div class="entry">
+          <div class="entry-header">
+            <div class="entry-date">📅 ${fmtDate(l.created_at)}</div>
+            ${!singleLog ? `<div class="entry-num">Registro #${poolLogs.length - idx}</div>` : ""}
+          </div>
+          ${l.tasks?.length ? `<div class="tasks">${l.tasks.map(t => `<span class="task-tag">${t}</span>`).join("")}</div>` : ""}
+          ${chemEntries.length ? `
+          <table>
+            <tr><th>Parámetro</th><th>Valor</th><th>Estado</th><th>Producto</th><th>Cantidad añadida</th></tr>
+            ${chemEntries.map(c => {
+              const v = l.chemicals[c.id];
+              const q = l.quantities?.[c.id];
+              const sc = statusClass(c.id, v);
+              return `<tr>
+                <td><strong>${c.label}</strong>${c.unit ? ` (${c.unit})` : ""}</td>
+                <td><strong>${v}</strong></td>
+                <td><span class="badge-${sc}">${statusLabel(c.id, v)}</span></td>
+                <td>${c.prod}</td>
+                <td>${q ? `${q} kg/L` : "—"}</td>
+              </tr>`;
+            }).join("")}
+          </table>` : ""}
+          ${l.notes ? `<div class="notes-box">📝 ${l.notes}</div>` : ""}
+        </div>`;
+      }).join("")}
+    </div>
+
+    <div class="footer">
+      <p>Generado automáticamente por AquaLog Pro · ${new Date().toLocaleDateString("es-ES")}</p>
+      <div class="brand">🏊 AquaLog Pro</div>
+    </div>
+
+  </div></body></html>`);
   win.document.close();
-  setTimeout(() => win.print(), 500);
+  setTimeout(() => win.print(), 800);
+}
 }
 
 export default function App() {
@@ -383,7 +567,7 @@ export default function App() {
             <div key={l.id} style={{ ...glass, borderRadius: 14, padding: 18, marginBottom: 12 }}>
               <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
                 <div>
-                  <div style={{ color: "#fff", fontWeight: 700, fontSize: 15 }}>{l.pool_name}</div>
+                  <div style={{ color: "#fff", fontWeight: 700, fontSize: 15 }}>{l.pool_name}<button style={{ background:"#0077b6", color:"#fff", border:"none", borderRadius:8, padding:"5px 10px", fontSize:11, cursor:"pointer", fontFamily:"Inter,Arial,sans-serif", fontWeight:600 }} onClick={e => { e.stopPropagation(); exportPDF(pools.find(p => p.id === l.pool_id), logs, l); }}>📄 PDF</button></div>
                   <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", marginTop: 2 }}>{fmtDate(l.created_at)}</div>
                 </div>
                 <div>{chems.slice(0, 2).map(c => { const v = l.chemicals?.[c.id]; if (!v) return null; const s = getStatus(c.id, v); return <span key={c.id} style={badge(s)}>{c.label}: {v}</span>; })}</div>
